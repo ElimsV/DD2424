@@ -38,12 +38,17 @@ class Load_Data:
         print("K: ", self.K)
         return file_data, self.unique_chars, self.K
 
+    def char_to_int(self):
+        return dict((c, i) for i, c in enumerate(self.unique_chars))
+
+    def int_to_char(self):
+        return dict((i, c) for i, c in enumerate(self.unique_chars))
 
 if __name__ == "__main__":
     path = "./goblet.txt"
     Data = Load_Data(path)
     file_data = Data.load_data()[0]  # load_data returns a tuple of 3 elements
-    print(file_data)
+    # print(file_data)
     # char_list = unique_data(path)
     # l = len(char_list)
     #
@@ -52,12 +57,20 @@ if __name__ == "__main__":
     # print(char_tuple)
 
     # test char2ind
-    c = file_data[23]
+    c = file_data[25]
     print("c: ", c)
     ind = char2ind(c, Data.unique_chars, Data.ind_mat, Data.K)
-    print(ind.T.shape)
-    print(np.dot(ind.T, ind))
+    # print(ind.T.shape)
+    # print(np.dot(ind.T, ind))
 
     # test ind2char
     char = ind2char(ind, Data.unique_chars, Data.K)
     print(char)
+
+    char2int = Data.char_to_int()
+    int2char = Data.int_to_char()
+    # test char_to_int
+    c = file_data[25]
+    print(char2int[c])
+    # test ind_to_char
+    print(int2char[char2int[c]])
