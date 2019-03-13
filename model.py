@@ -3,11 +3,18 @@ from data_preprocess import char2ind, ind2char, Load_Data
 from utils import softmax
 
 class RNN():
-    def __init__(self, K):
+    def __init__(self, K, h_prev, batch_size):
+        """
+        Build a RNN
+        Cannot handle inputs size smaller than batch size
+        :param K: scalar, encoding dim
+        :param h_prev: m*1 2d array
+        :param batch_size: scalar
+        """
         # Hyper-parameters
-        self.m = 100  # hidden state
+        self.m = h_prev.shape[0]  # hidden state
         self.eta = 0.1  # learning rate
-        self.seq_length = 25
+        self.seq_length = batch_size
         self.K = K
         self.sig = 0.01
 
@@ -17,6 +24,24 @@ class RNN():
         self.U = np.random.standard_normal(size=[self.m, self.K]) * self.sig
         self.W = np.random.standard_normal(size=[self.m, self.m]) * self.sig
         self.V = np.random.standard_normal(size=[self.K, self.m]) * self.sig
+
+        # Intent variables for backward pass
+        self.Y = np.zeros([self.K, self.seq_length])
+        self.prob = np.zeros([self.K, self.seq_length])
+        self.h_prev = h_prev  # 2d array
+        self.h = np.zeros([self.m, self.seq_length])
+        self.a = np.zeros([self.m, self.seq_length])
+
+        # gradients
+        self.grad_o = np.zeros([self.K, self.seq_length])
+        self.grad_a = np.zeros([self.m, self.seq_length])
+        self.grad_h = np.zeros([self.m, self.seq_length])
+        self.grad_b = np.zeros_like(self.b)
+        self.grad_c = np.zeros_like(self.c)
+        self.grad_U = np.zeros_like(self.U)
+        self.grad_W = np.zeros_like(self.W)
+        self.grad_V = np.zeros_like(self.V)
+
 
 
     def forward_pass(self, h_prev, x):
@@ -28,7 +53,31 @@ class RNN():
         h = np.tanh(a)
         o = np.dot(self.V, h) + self.c
         p = softmax(o)
-        return h, p
+        return h, p, a
+
+    def backward_pass(self, X, target):
+        """
+        Calculate grads
+        :param X: onehot
+        :param target: onehot
+        :return:
+        """
+        self.grad_o = self.prob - target
+        self.grad_c = np.sum(self.grad_o, axis=1)
+        self.grad_V = np.dot(self.grad_o, self.h.T)
+
+        for t in range(self.seq_length)[::-1]:
+            if t == self.seq_length - 1:
+                self.grad_h[:, t] = self.grad_o[:, t].dot(self.V)
+            else:
+                self.grad_h[:, t] = self.grad_o[:, t].dot(self.V) + self.grad_a[:, t+1].dot(self.W)
+            self.grad_a[:, t] = self.grad_h[:, t].dot(np.diag(1 - self.h[:, t] ** 2))
+
+        h_tmp = np.hstack((self.h_prev, self.h[:, :-1]))
+        self.grad_W = self.grad_a.dot(h_tmp.T)
+        self.grad_U = self.grad_a.dot(X.T)
+        self.grad_b = np.sum(self.grad_a, axis=1)
+        return self.grad_b, self.grad_c, self.grad_U, self.grad_W, self.grad_V
 
     def generate_chars(self, h0, x0, batch_size):
         """
@@ -44,7 +93,7 @@ class RNN():
 
         int_list = []
         while count < batch_size:
-            h_prev, p = self.forward_pass(h_prev, x)
+            h_prev, p, _= self.forward_pass(h_prev, x)
             int_max = np.argmax(p)
             int_list.append(int_max)
 
@@ -58,37 +107,35 @@ class RNN():
         assert len(int_list) == batch_size, "Erroneous output length!"
         return int_list
 
-    def predict_prob(self, h_prev, X):
+    def predict_prob(self, X):
         """
         predict prob output
-        :param h_prev: previous hidden state
         :param X: K*seq_len
         :return prob: K*seq_len, prob output
         """
-        Y = np.zeros_like(X)
-        prob = np.zeros_like(X)
+        h_prev = self.h_prev
         for t in range(X.shape[1]):
-            h_prev, p = self.forward_pass(h_prev, X[:, t].reshape([self.K, 1]))
-            prob[:, t] = p.reshape(self.K)  # probability output
-        return prob, h_prev
+            h_prev, p, a = self.forward_pass(h_prev, X[:, t].reshape([self.K, 1]))
+            self.prob[:, t] = p.reshape(self.K)  # probability output
+            self.h[:, t] = h_prev.reshape(self.m)
+            self.a[:, t] = a.reshape(self.m)
+        return self.prob
 
-    def predict_onehot(self, h_prev, X):
+    def predict_onehot(self, X):
         """
         predict onehot output
-        :param h_prev: previous hidden state
         :param X: K*seq_len
         :return Y: K*seq_len, one-hot output
         """
-        prob, _ = self.predict_prob(h_prev, X)
-        Y = np.zeros_like(prob)
-        int_max = np.argmax(prob, axis=0)
-        Y[int_max, range(prob.shape[1])] = 1  # onehot output
-        return Y, h_prev
+        self.prob = self.predict_prob(X)
+        int_max = np.argmax(self.prob, axis=0)
+        self.Y[int_max, range(self.prob.shape[1])] = 1  # onehot output
+        return self.Y
 
-    def compute_loss(self, h_prev, X, target):
+    def compute_loss(self, X, target):
         assert X.shape == target.shape, "X and target shape error!"
-        prob, _ = self.predict_prob(h_prev, X)
-        tmp = np.sum(prob * target, axis=0)
+        self.prob = self.predict_prob(X)
+        tmp = np.sum(self.prob * target, axis=0)
         tmp[tmp == 0] = np.finfo(float).eps
         return - np.sum(np.log(tmp))
 
@@ -126,14 +173,13 @@ if __name__ == "__main__":
     # print(text)
 
     ######test compute loss######
-    # init rnn network
-    rnn_net = RNN(data_loader.K)
-
     # init hidden state
     # h0 = np.random.standard_normal([rnn_net.m, 1])
-    h0 = np.zeros([rnn_net.m, 1])
-
+    h0 = np.zeros([100, 1])
     seq_len = 25
+    # init rnn network
+    rnn_net = RNN(data_loader.K, h0, seq_len)
+
     X_onehot = np.zeros([rnn_net.K, seq_len])
     target_onehot = np.zeros([rnn_net.K, seq_len])
     X_int = [char2int[ch] for ch in file_data[:seq_len]]
@@ -141,5 +187,11 @@ if __name__ == "__main__":
     X_onehot[X_int, range(seq_len)] = 1
     target_onehot[target_int, range(seq_len)] = 1
 
-    loss = rnn_net.compute_loss(h0, X_onehot, target_onehot)
+    loss = rnn_net.compute_loss(X_onehot, target_onehot)
     print(loss)
+
+    ######test gradient computation######
+    # grad_b, grad_c, grad_U, grad_W, grad_V
+    grads = rnn_net.backward_pass(X_onehot, target_onehot)
+    for grad in grads:
+        print(grad)
