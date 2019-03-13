@@ -1,6 +1,6 @@
 import numpy as np
 from data_preprocess import char2ind, ind2char, Load_Data
-from utils import softmax
+from utils import softmax, check_grad
 
 class RNN():
     def __init__(self, K, h_prev, batch_size):
@@ -24,10 +24,10 @@ class RNN():
         self.U = np.random.standard_normal(size=[self.m, self.K]) * self.sig
         self.W = np.random.standard_normal(size=[self.m, self.m]) * self.sig
         self.V = np.random.standard_normal(size=[self.K, self.m]) * self.sig
+        self.paras = [self.b, self.c, self.U, self.W, self.V]
 
         # Intent variables for backward pass
         self.Y = np.zeros([self.K, self.seq_length])
-        self.prob = np.zeros([self.K, self.seq_length])
         self.h_prev = h_prev  # 2d array
         self.h = np.zeros([self.m, self.seq_length])
         self.a = np.zeros([self.m, self.seq_length])
@@ -62,8 +62,9 @@ class RNN():
         :param target: onehot
         :return:
         """
-        self.grad_o = self.prob - target
-        self.grad_c = np.sum(self.grad_o, axis=1)
+        prob = self.predict_prob(X)
+        self.grad_o = prob - target
+        self.grad_c = np.sum(self.grad_o, axis=1).reshape(self.c.shape)
         self.grad_V = np.dot(self.grad_o, self.h.T)
 
         for t in range(self.seq_length)[::-1]:
@@ -76,7 +77,7 @@ class RNN():
         h_tmp = np.hstack((self.h_prev, self.h[:, :-1]))
         self.grad_W = self.grad_a.dot(h_tmp.T)
         self.grad_U = self.grad_a.dot(X.T)
-        self.grad_b = np.sum(self.grad_a, axis=1)
+        self.grad_b = np.sum(self.grad_a, axis=1).reshape(self.b.shape)
         return self.grad_b, self.grad_c, self.grad_U, self.grad_W, self.grad_V
 
     def generate_chars(self, h0, x0, batch_size):
@@ -114,12 +115,13 @@ class RNN():
         :return prob: K*seq_len, prob output
         """
         h_prev = self.h_prev
+        prob = np.zeros([self.K, self.seq_length])
         for t in range(X.shape[1]):
             h_prev, p, a = self.forward_pass(h_prev, X[:, t].reshape([self.K, 1]))
-            self.prob[:, t] = p.reshape(self.K)  # probability output
+            prob[:, t] = p.reshape(self.K)  # probability output
             self.h[:, t] = h_prev.reshape(self.m)
             self.a[:, t] = a.reshape(self.m)
-        return self.prob
+        return prob
 
     def predict_onehot(self, X):
         """
@@ -127,15 +129,15 @@ class RNN():
         :param X: K*seq_len
         :return Y: K*seq_len, one-hot output
         """
-        self.prob = self.predict_prob(X)
-        int_max = np.argmax(self.prob, axis=0)
-        self.Y[int_max, range(self.prob.shape[1])] = 1  # onehot output
+        prob = self.predict_prob(X)
+        int_max = np.argmax(prob, axis=0)
+        self.Y[int_max, range(prob.shape[1])] = 1  # onehot output
         return self.Y
 
     def compute_loss(self, X, target):
         assert X.shape == target.shape, "X and target shape error!"
-        self.prob = self.predict_prob(X)
-        tmp = np.sum(self.prob * target, axis=0)
+        prob = self.predict_prob(X)
+        tmp = np.sum(prob * target, axis=0)
         tmp[tmp == 0] = np.finfo(float).eps
         return - np.sum(np.log(tmp))
 
@@ -187,11 +189,12 @@ if __name__ == "__main__":
     X_onehot[X_int, range(seq_len)] = 1
     target_onehot[target_int, range(seq_len)] = 1
 
-    loss = rnn_net.compute_loss(X_onehot, target_onehot)
-    print(loss)
+    # loss = rnn_net.compute_loss(X_onehot, target_onehot)
+    # print(loss)
 
     ######test gradient computation######
-    # grad_b, grad_c, grad_U, grad_W, grad_V
-    grads = rnn_net.backward_pass(X_onehot, target_onehot)
-    for grad in grads:
-        print(grad)
+    # grads = rnn_net.backward_pass(X_onehot, target_onehot)
+    # for grad in grads:
+    #     print(grad)
+
+    check_grad(rnn_net, X_onehot, target_onehot)
