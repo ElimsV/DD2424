@@ -28,14 +28,14 @@ class RNN():
         h = np.tanh(a)
         o = np.dot(self.V, h) + self.c
         p = softmax(o)
-        return h, o, p
+        return h, p
 
-    def generate_chars(self, h0, x0, n):
+    def generate_chars(self, h0, x0, batch_size):
         """
-        Generate text of length n
+        Generate text of length batch_size
         :param h0: init hidden state
         :param x0: init one-hot input
-        :param n: output length
+        :param batch_size: output length
         :return:
         """
         count = 0
@@ -43,8 +43,8 @@ class RNN():
         x = x0
 
         int_list = []
-        while count < n:
-            h_prev, o, p = self.forward_pass(h_prev, x)
+        while count < batch_size:
+            h_prev, p = self.forward_pass(h_prev, x)
             int_max = np.argmax(p)
             int_list.append(int_max)
 
@@ -55,8 +55,42 @@ class RNN():
 
             count += 1
 
-        assert len(int_list) == n, "Erroneous output length!"
+        assert len(int_list) == batch_size, "Erroneous output length!"
         return int_list
+
+    def predict_prob(self, h_prev, X):
+        """
+        predict prob output
+        :param h_prev: previous hidden state
+        :param X: K*seq_len
+        :return prob: K*seq_len, prob output
+        """
+        Y = np.zeros_like(X)
+        prob = np.zeros_like(X)
+        for t in range(X.shape[1]):
+            h_prev, p = self.forward_pass(h_prev, X[:, t].reshape([self.K, 1]))
+            prob[:, t] = p.reshape(self.K)  # probability output
+        return prob, h_prev
+
+    def predict_onehot(self, h_prev, X):
+        """
+        predict onehot output
+        :param h_prev: previous hidden state
+        :param X: K*seq_len
+        :return Y: K*seq_len, one-hot output
+        """
+        prob, _ = self.predict_prob(h_prev, X)
+        Y = np.zeros_like(prob)
+        int_max = np.argmax(prob, axis=0)
+        Y[int_max, range(prob.shape[1])] = 1  # onehot output
+        return Y, h_prev
+
+    def compute_loss(self, h_prev, X, target):
+        assert X.shape == target.shape, "X and target shape error!"
+        prob, _ = self.predict_prob(h_prev, X)
+        tmp = np.sum(prob * target, axis=0)
+        tmp[tmp == 0] = np.finfo(float).eps
+        return - np.sum(np.log(tmp))
 
 
 if __name__ == "__main__":
@@ -67,25 +101,45 @@ if __name__ == "__main__":
     char2int = data_loader.char_to_int()  # dict char to int
     int2char = data_loader.int_to_char()  # dict int to char
     
-    ######test generation chars######
-    # init input char
-    c0 = 'a'
-    int_0 = char2int[c0]
-    x0 = np.zeros([data_loader.K, 1])
-    x0[int_0] = 1
+    # ######test generation chars######
+    # # init input char
+    # c0 = 'a'
+    # int_0 = char2int[c0]
+    # x0 = np.zeros([data_loader.K, 1])
+    # x0[int_0] = 1
+    #
+    # # init rnn network
+    # rnn_net = RNN(data_loader.K)
+    #
+    # # init hidden state
+    # # h0 = np.random.standard_normal([rnn_net.m, 1])
+    # h0 = np.zeros([rnn_net.m, 1])
+    #
+    # # output length
+    # n = 20
+    #
+    # # generate text
+    # int_list = rnn_net.generate_chars(h0, x0, n)
+    # text = ''
+    # for i in int_list:
+    #     text = text + int2char[i]
+    # print(text)
 
+    ######test compute loss######
     # init rnn network
     rnn_net = RNN(data_loader.K)
 
     # init hidden state
-    h0 = np.random.standard_normal([rnn_net.m, 1])
+    # h0 = np.random.standard_normal([rnn_net.m, 1])
+    h0 = np.zeros([rnn_net.m, 1])
 
-    # output length
-    n = 20
+    seq_len = 25
+    X_onehot = np.zeros([rnn_net.K, seq_len])
+    target_onehot = np.zeros([rnn_net.K, seq_len])
+    X_int = [char2int[ch] for ch in file_data[:seq_len]]
+    target_int = [char2int[ch] for ch in file_data[1:seq_len+1]]
+    X_onehot[X_int, range(seq_len)] = 1
+    target_onehot[target_int, range(seq_len)] = 1
 
-    # generate text
-    int_list = rnn_net.generate_chars(h0, x0, n)
-    text = ''
-    for i in int_list:
-        text = text + int2char[i]
-    print(text)
+    loss = rnn_net.compute_loss(h0, X_onehot, target_onehot)
+    print(loss)
