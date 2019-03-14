@@ -1,0 +1,2 @@
+LEARNING_RATE = 0.1
+SIG = 0.01

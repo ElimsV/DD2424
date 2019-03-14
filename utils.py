@@ -49,7 +49,7 @@ def check_grad(net, X, target, delta=1e-4):
         res = np.average(np.absolute(grad[k] - grad_nums[k])) / np.amax(np.absolute(grad[k]) + np.absolute(grad_nums[k]))
         res_paras.append(res)
 
-    print("Gradient errors:")
+    print("Gradient differences:")
     print("grad_b =====> ", res_paras[0])
     print("grad_c =====> ", res_paras[1])
     print("grad_U =====> ", res_paras[2])

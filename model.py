@@ -1,6 +1,7 @@
 import numpy as np
 from data_preprocess import char2ind, ind2char, Load_Data
 from utils import softmax, check_grad
+import config as cfg
 
 class RNN():
     def __init__(self, K, h_prev, batch_size):
@@ -13,10 +14,10 @@ class RNN():
         """
         # Hyper-parameters
         self.m = h_prev.shape[0]  # hidden state
-        self.eta = 0.1  # learning rate
+        self.eta = cfg.LEARNING_RATE  # learning rate
         self.seq_length = batch_size
         self.K = K
-        self.sig = 0.01
+        self.sig = cfg.SIG
 
         # Network parameters
         self.b = np.zeros([self.m, 1])
@@ -31,18 +32,6 @@ class RNN():
         self.h_prev = h_prev  # 2d array
         self.h = np.zeros([self.m, self.seq_length])
         self.a = np.zeros([self.m, self.seq_length])
-
-        # gradients
-        self.grad_o = np.zeros([self.K, self.seq_length])
-        self.grad_a = np.zeros([self.m, self.seq_length])
-        self.grad_h = np.zeros([self.m, self.seq_length])
-        self.grad_b = np.zeros_like(self.b)
-        self.grad_c = np.zeros_like(self.c)
-        self.grad_U = np.zeros_like(self.U)
-        self.grad_W = np.zeros_like(self.W)
-        self.grad_V = np.zeros_like(self.V)
-
-
 
     def forward_pass(self, h_prev, x):
         # x: K*1
@@ -62,23 +51,41 @@ class RNN():
         :param target: onehot
         :return:
         """
+        assert X.shape[1] == target.shape[1], "X and target seq_len error!"
+        seq_length = X.shape[1]
+        # grad_o = np.zeros([self.K, seq_length])
+        grad_a = np.zeros([self.m, seq_length])
+        grad_h = np.zeros([self.m, seq_length])
+        # grad_b = np.zeros_like(self.b)
+        # grad_c = np.zeros_like(self.c)
+        # grad_U = np.zeros_like(self.U)
+        # grad_W = np.zeros_like(self.W)
+        # grad_V = np.zeros_like(self.V)
+        
         prob = self.predict_prob(X)
-        self.grad_o = prob - target
-        self.grad_c = np.sum(self.grad_o, axis=1).reshape(self.c.shape)
-        self.grad_V = np.dot(self.grad_o, self.h.T)
+        grad_o = prob - target
+        grad_c = np.sum(grad_o, axis=1).reshape(self.c.shape)
+        grad_V = np.dot(grad_o, self.h.T)
 
         for t in range(self.seq_length)[::-1]:
             if t == self.seq_length - 1:
-                self.grad_h[:, t] = self.grad_o[:, t].dot(self.V)
+                grad_h[:, t] = grad_o[:, t].dot(self.V)
             else:
-                self.grad_h[:, t] = self.grad_o[:, t].dot(self.V) + self.grad_a[:, t+1].dot(self.W)
-            self.grad_a[:, t] = self.grad_h[:, t].dot(np.diag(1 - self.h[:, t] ** 2))
+                grad_h[:, t] = grad_o[:, t].dot(self.V) + grad_a[:, t+1].dot(self.W)
+            grad_a[:, t] = grad_h[:, t].dot(np.diag(1 - self.h[:, t] ** 2))
 
         h_tmp = np.hstack((self.h_prev, self.h[:, :-1]))
-        self.grad_W = self.grad_a.dot(h_tmp.T)
-        self.grad_U = self.grad_a.dot(X.T)
-        self.grad_b = np.sum(self.grad_a, axis=1).reshape(self.b.shape)
-        return self.grad_b, self.grad_c, self.grad_U, self.grad_W, self.grad_V
+        grad_W = grad_a.dot(h_tmp.T)
+        grad_U = grad_a.dot(X.T)
+        grad_b = np.sum(grad_a, axis=1).reshape(self.b.shape)
+
+        # gradient clip
+        grads = [grad_b, grad_c, grad_U, grad_W, grad_V]
+        grads_clip = []
+        for grad in grads:
+            grad_clip = np.maximum(np.minimum(grad, 5), -5)
+            grads_clip.append(grad_clip)
+        return grads_clip  # grad_b, grad_c, grad_U, grad_W, grad_V
 
     def generate_chars(self, h0, x0, batch_size):
         """
@@ -143,7 +150,7 @@ class RNN():
 
 
 if __name__ == "__main__":
-    path = "./goblet.txt"
+    path = "./data/goblet.txt"
     data_loader = Load_Data(path)
     file_data = data_loader.load_data()[0]  # load_data returns a tuple of 3 elements
 
@@ -177,7 +184,7 @@ if __name__ == "__main__":
     ######test compute loss######
     # init hidden state
     # h0 = np.random.standard_normal([rnn_net.m, 1])
-    h0 = np.zeros([100, 1])
+    h0 = np.zeros([5, 1])
     seq_len = 25
     # init rnn network
     rnn_net = RNN(data_loader.K, h0, seq_len)
