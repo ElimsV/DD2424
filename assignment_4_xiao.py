@@ -6,14 +6,14 @@ import config as cfg
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    tag = "10epochs"
+    tag = "Test"
     h_prev = np.zeros([cfg.M, 1])
 
     # load data
     path = cfg.PATH
     data_loader = Load_Data(path)
     file_data = data_loader.load_data()[0]  # load_data returns a tuple of 3 elements
-    # file_data = file_data[:25000]
+	# file_data = file_data[:2500]
     data_len = len(file_data)
 
     # char int converter
@@ -33,7 +33,8 @@ if __name__ == '__main__':
     del file_data, X_int, target_int
 
     # start training
-    smooth_loss_acc = rnn_net.train(X_onehot, target_onehot, h_prev, int2char, epoch_num=cfg.EPOCH, batch_size=cfg.BATCH_SIZE)
+    smooth_loss_acc = rnn_net.train(X_onehot, target_onehot, h_prev, int2char, char2int,
+                                    epoch_num=cfg.EPOCH, batch_size=cfg.BATCH_SIZE)
     print("Smoothed loss:")
     print(smooth_loss_acc)
 

@@ -155,7 +155,7 @@ class RNN:
         tmp[tmp == 0] = np.finfo(float).eps
         return - np.sum(np.log(tmp))
 
-    def train(self, X_all, target_all, h_prev, int2char, epoch_num=cfg.EPOCH, batch_size=cfg.BATCH_SIZE):
+    def train(self, X_all, target_all, h_prev, int2char, char2int, epoch_num=cfg.EPOCH, batch_size=cfg.BATCH_SIZE):
         # check validity
         assert X_all.shape[1] == target_all.shape[1], "X and target length mismatch!"
         dataset_size = X_all.shape[1]
@@ -217,10 +217,11 @@ class RNN:
             iteration += 1
 
         print("*"*30, " Finished training! ", "*"*30)
+
+        # synthesize a passage with the last model
         passage = ''
         x0 = np.zeros([self.K, 1])
-        # x0[random.randint(0, self.K - 1)] = 1
-        x0[12] = 1
+        x0[char2int[' ']] = 1
         passage_ints = self.generate_chars(self.h_prev, x0, cfg.PASSAGE_LENGTH)
         for passage_int in passage_ints:
             passage += int2char[passage_int]
