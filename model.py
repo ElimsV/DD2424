@@ -1,6 +1,7 @@
 import numpy as np
 from data_preprocess import char2ind, ind2char, Load_Data
 from utils import softmax, check_grad
+from optimizer import AdaGrad
 import config as cfg
 
 class RNN():
@@ -15,6 +16,7 @@ class RNN():
         # Hyper-parameters
         self.m = h_prev.shape[0]  # hidden state
         self.eta = cfg.LEARNING_RATE  # learning rate
+        self.epsilon = cfg.EPSILON
         self.seq_length = batch_size
         self.K = K
         self.sig = cfg.SIG
@@ -147,6 +149,39 @@ class RNN():
         tmp = np.sum(prob * target, axis=0)
         tmp[tmp == 0] = np.finfo(float).eps
         return - np.sum(np.log(tmp))
+
+    def train(self, X_all, target_all, h_prev, epoch_num=cfg.EPOCH, batch_size=cfg.BATCH_SIZE):
+        # check validity
+        assert X_all.shape[1] == target_all.shape[1], "X and target length mismatch!"
+        dataset_size = X_all.shape[1]
+        assert dataset_size > batch_size, "Batch size larger than dataset size!"
+        # initialize
+        pt_start = 0
+        epoch = 1
+        iteration = 1
+        opt = AdaGrad(eta=self.eta, epsilon=self.epsilon)
+        momentums = [np.zeros_like(p) for p in self.paras]
+
+        while epoch <= epoch_num:
+            print("*"*30, " Starting epoch {}".format(epoch), "*"*30)
+            pt_end = (pt_start + batch_size) % dataset_size
+            if pt_start < pt_end:
+                batch_ind = list(range(pt_start, pt_end))
+            elif pt_start > pt_end:
+                batch_ind = list(range(pt_start, dataset_size))+list(range(pt_end+1))
+                assert len(batch_ind) == batch_size, "Batch indexing error! Iterate to the end."
+                epoch += 1
+                # TODO: reset h_prev
+            X_batch = X_all[:, batch_ind]
+            target_batch = target_all[:, batch_ind]
+
+            grads = self.backward_pass(X_batch, target_batch)
+            opt.update([self.b, self.c, self.U, self.W, self.V], grads, momentums)
+
+            # TODO: update h_prev
+
+            pt_end = pt_start
+            iteration += 1
 
 
 if __name__ == "__main__":
