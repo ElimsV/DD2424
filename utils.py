@@ -23,7 +23,7 @@ def check_grad(net, X, target, delta=1e-4):
     :return:
     """
     print("Calculate gradients analytically!")
-    grads = net.backward_pass(X, target)
+    grads, _ = net.backward_pass(X, target)
     print(grads)
 
     print("Calculate gradients numerically!")
@@ -46,7 +46,7 @@ def check_grad(net, X, target, delta=1e-4):
     print("Checking Grads:")
     res_paras = []
     for k in range(len(grad_nums)):
-        res = np.average(np.absolute(grads[k] - grad_nums[k])) / np.amax(np.absolute(grad[k]) + np.absolute(grad_nums[k]))
+        res = np.average(np.absolute(grads[k] - grad_nums[k])) / np.amax(np.absolute(grads[k]) + np.absolute(grad_nums[k]))
         res_paras.append(res)
 
     print("Gradient differences:")

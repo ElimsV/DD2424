@@ -1,0 +1,41 @@
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-guest'
+Data loaded!
+Unique chars:  ['J', 'ü', 'R', '^', 'T', 'P', 'G', 'e', ':', 'j', 'X', '6', 'o', 'v', "'", 'q', 't', 'F', '/', 'c', 'B', 'M', 'S', ',', '(', 'b', '_', 'Q', 'L', 'u', '1', '?', '}', 'w', 'l', 'n', 'Z', 'i', 'x', ' ', '4', 'h', 'Y', 'p', 'r', 'C', '.', 'E', '7', 'K', '!', 'H', ')', 'k', 'D', '\t', '0', '3', '2', 'f', '-', '9', 'd', 'A', '\n', 'N', 'O', ';', 'V', '"', 'y', 'a', 'g', '•', 'm', 'U', 's', 'z', 'I', 'W']
+K:  80
+******************************  Starting epoch 1/2  ******************************
+Synthesized text before 1 iteration:
+//J'WUmJ;v'O;h•h;//_/O'N^;/'';h!bO
+;o'oUh•JWhJ l'
+kbbK'7•;_,';vhJ/O/bO/;,J'v/'_JYlYO;/WmhWhJm/YJWblhkW/'vv7O;'vKO;'W;'; h/U;h/'N 'J
+OJW;h_'W_''Obhh/o//';J7JhhUJO/'';''vlW;bv/h_/KOol/;O;JhUhOOl;K7,hh'K
+Iteration 100      Current smoothed loss: 106.581988713863
+Iteration 200      Current smoothed loss: 103.35006252243898
+Iteration 300      Current smoothed loss: 99.95725189850823
+Iteration 400      Current smoothed loss: 96.68746897117283
+Iteration 500      Current smoothed loss: 94.06299855026788
+Synthesized text before 501 iteration:
+        tneten   tohetnnn  ntoetet eet n  tehn   enn ten e n  e  tee    teet te    n the     teteee ete   tnth ttn   ten te tt     te   tt  e tete tete    tete te nthe    etee  t etn een  	et toeee   
+Iteration 600      Current smoothed loss: 91.5959120999511
+Iteration 700      Current smoothed loss: 89.26852953045479
+Iteration 800      Current smoothed loss: 86.81858122571452
+Iteration 900      Current smoothed loss: 84.75122844640009
+******************************  Starting epoch 2/2  ******************************
+Iteration 1000      Current smoothed loss: 82.72580110030228
+Synthesized text before 1001 iteration:
+oen aoh teen  t n n nn th     eanen  e ann n toneeen   aen the    n e  t n  an  he n aen  ae   hor n  an teen      tonen   then ton      n n  tnhn  n  eaYe  eeeen   ten  n  n    a th    ten tea  n    
+Iteration 1100      Current smoothed loss: 81.0628422954059
+Iteration 1200      Current smoothed loss: 79.2957366867556
+Iteration 1300      Current smoothed loss: 77.56210419216887
+Iteration 1400      Current smoothed loss: 75.91687470389587
+Iteration 1500      Current smoothed loss: 74.75117365503746
+Synthesized text before 1501 iteration:
+ een tooreheeee    ten tor  tn e te n teeren  n  toeen  toh   tnn  n then  tn   tr  ton  tTorn  torn   hor      	he tr eeeteen tTh 	orn  to en   tooen thonee  to t  n tn   ten  tor the   toe  to n tr 
+Iteration 1600      Current smoothed loss: 73.74473952451818
+Iteration 1700      Current smoothed loss: 72.78961939380824
+Iteration 1800      Current smoothed loss: 71.65528028205534
+Iteration 1900      Current smoothed loss: 70.765952502335
+******************************  Finished training!  ******************************
+Synthesized passage with the finest model:
+nn heen    	u hee aehn   toern 	o  	"hen hor ter hornn  aorn    ahe t n   ten     heenn    tounn  tohern  tn theeeen nn    ten n  toen ton  tr hrer r    trn torn trn     an  te n   tn  aee toaoo  h n teh tn hnn tor  n thhan hn he nhn  tor aoer  toter a	ohe n   	he tere   ther      	nen  t   	or   aen  tor  toorn ton e     h       toen      hnn een   hooh" ahen  aor    hh teen  tor  ann  	he  to ton hr  the  ae  n he     tonh  toun hen toun aonehe  nn torn   n teeeaoe    t  hh   hehee    to torer hn  aon toun horn   teen te  henn  te  ee  toen hone  eaorn  ton toe n heen  aen     thn nn  an    theen     hr er  ton  aenn  aorn t ter  "on  the  thn   hon n  	o tnh aeen n  t   than tn then he te tor  hon hohoon n n hr  t ton  t"	"ueen tr ean n he trn horn thenen toon n  tnh te ton   ae tah th  theaoee e teer  an n 	h   eeaner  n    the  ahe     heer een  n tehee tn    tern tn  toe   hhen   nhheaoeen te to   enen he   tenete n hn    toon e nhonehhernh  an  hone      en  hee  he th then ton 
+Smoothed loss:
+[109.55066586684703, 106.581988713863, 103.35006252243898, 99.95725189850823, 96.68746897117283, 94.06299855026788, 91.5959120999511, 89.26852953045479, 86.81858122571452, 84.75122844640009, 82.72580110030228, 81.0628422954059, 79.2957366867556, 77.56210419216887, 75.91687470389587, 74.75117365503746, 73.74473952451818, 72.78961939380824, 71.65528028205534, 70.765952502335]

@@ -13,3 +13,10 @@ if __name__ == "__main__":
     print(dummy.para)
     dummy.update()
     print(dummy.para)
+
+    e, s = 1, 2
+    l = [e, s]
+    print(l)
+    e += 1
+    s += 1
+    print(l)
